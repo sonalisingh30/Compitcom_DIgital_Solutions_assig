@@ -48,7 +48,7 @@ function SignIn() {
       className="flex  w-full flex-col justify-center items-center mx-auto px-5"
     >
       <p className="mb-6 mt-2 font-nunito text-lg text-blue-900 md:text-gray-400 px-2">
-        Welcome Back, Sign in to your Schooly account
+        Welcome Back, Sign in to your account
       </p>
       <form
         onSubmit={handleSignIn}
