@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import AddCard from "./AddCard";
 import PlayCard from "./PlayCard";
@@ -11,8 +12,7 @@ import {
 import {
   getCardsByBucketId,
   deleteMultipleCards,
-  moveCardsToBucket,
-  updateCard, // Import the updateCard action
+  moveCardsToBucket, // Import moveCardsToBucket action
 } from "../slices/combinedSlice";
 
 function MainSpce() {
@@ -21,11 +21,11 @@ function MainSpce() {
   const [isPlayModalOpen, setIsPlayModalOpen] = useState(false);
   const [currentPlayCard, setCurrentPlayCard] = useState(null);
   const [currentCard, setCurrentCard] = useState(null);
-  const [newLink, setNewLink] = useState(""); // State for new link
   const [selectedCards, setSelectedCards] = useState(new Set());
   const [isSelecting, setIsSelecting] = useState(false);
-  const [selectedBucketId, setSelectedBucketId] = useState(null);
-  const [dropSelector, setDropSelector] = useState("");
+  const [selectedBucketId, setSelectedBucketId] = useState(null); // State for selected bucket ID
+
+  const [selectedId, setSelectedId] = useState("");
 
   const { buckets, selectedBucketCard } = useSelector(
     (state) => state.combined
@@ -43,22 +43,12 @@ function MainSpce() {
 
   const handleEditButtonClick = (card) => {
     setCurrentCard(card);
-    setNewLink(card.link || ""); // Initialize with existing link
     setIsEditModalOpen(true);
   };
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setCurrentCard(null);
-    setNewLink(""); // Reset new link
-  };
-
-  const saveCardChanges = () => {
-    if (currentCard) {
-      dispatch(updateCard({ ...currentCard, link: newLink })); // Dispatch action to update card
-      closeEditModal();
-      dispatch(getCardsByBucketId(selectedBucketId)); // Refresh the cards
-    }
   };
 
   const handlePlayButtonClick = (card) => {
@@ -103,18 +93,21 @@ function MainSpce() {
       return;
     }
 
-    if (!dropSelector) {
+    if (!selectedId) {
       alert("Please select a bucket to move the cards to.");
       return;
     }
 
     const cardIds = Array.from(selectedCards);
-    dispatch(moveCardsToBucket({ cardIds, newBucketId: dropSelector }));
-    setSelectedCards(new Set());
-    setDropSelector("");
-
+    dispatch(moveCardsToBucket({ cardIds, newBucketId: selectedId }));
     dispatch(getCardsByBucketId(selectedBucketId));
+    setSelectedCards(new Set());
+    setSelectedBucketId(null); // Reset the selected bucket ID
   };
+
+  useEffect(() => {
+    if (selectedBucketId) dispatch(getCardsByBucketId(selectedBucketId));
+  }, [selectedBucketId]);
 
   if (buckets.length === 0) {
     return (
@@ -171,13 +164,6 @@ function MainSpce() {
               }
               className="w-full p-2 border border-gray-300 rounded-lg"
             />
-            <input
-              type="text"
-              value={newLink}
-              onChange={(e) => setNewLink(e.target.value)}
-              placeholder="Add a new link"
-              className="w-full mt-2 p-2 border border-gray-300 rounded-lg"
-            />
             <button
               onClick={closeEditModal}
               className="mt-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-700"
@@ -185,7 +171,9 @@ function MainSpce() {
               Close
             </button>
             <button
-              onClick={saveCardChanges}
+              onClick={() => {
+                closeEditModal();
+              }}
               className="mt-4 ml-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700"
             >
               Save Changes
@@ -210,7 +198,7 @@ function MainSpce() {
       )}
 
       {/* Render Actions for selected cards */}
-      {isSelecting && selectedBucketCard.length > 0 && (
+      {isSelecting && (
         <div className="flex justify-between p-4">
           <button
             onClick={deleteSelectedCards}
@@ -221,8 +209,8 @@ function MainSpce() {
 
           {/* Dropdown for selecting a bucket */}
           <select
-            value={dropSelector || ""}
-            onChange={(e) => setDropSelector(e.target.value)}
+            value={selectedId || ""}
+            onChange={(e) => setSelectedId(e.target.value)}
             className="border rounded-md px-2 py-1"
           >
             <option value="" disabled>
@@ -245,11 +233,32 @@ function MainSpce() {
       )}
 
       {/* Rendering list of cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-        {selectedBucketCard.map((card) => (
-          <div key={card.id} className="border rounded-lg p-4 shadow-md">
-            <h3 className="font-bold">{card.name}</h3>
-            <p>{card.link}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 gap-6 mt-[2vh] px-10">
+        {selectedBucketCard?.map((card, index) => (
+          <div
+            key={index}
+            className="border-2 p-4 rounded-lg shadow-lg border-blue-900 flex justify-between items-center "
+          >
+            {isSelecting && (
+              <input
+                type="checkbox"
+                checked={selectedCards.has(card.id)}
+                onChange={() => handleCheckboxChange(card.id)}
+                className="mr-2"
+              />
+            )}
+            <h3
+              className="text-lg font-semibold w-full cursor-pointer"
+              onClick={() => handlePlayButtonClick(card)}
+            >
+              {card.name}
+            </h3>
+            <div
+              className="cursor-pointer"
+              onClick={() => handleEditButtonClick(card)}
+            >
+              <HiOutlinePencilSquare size={30} />
+            </div>
           </div>
         ))}
       </div>
